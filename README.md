@@ -1,58 +1,98 @@
-# KidAI — 作業助手 · 繪本朗讀
+# KidAI 🎒
 
-幫助台灣國小家長用 AI 檢查作業、朗讀繪本的網頁工具。
+> 幫助台灣國小家長用 AI 檢查作業、朗讀繪本的網頁工具
 
-🔗 **Live Demo**: https://sakuradigi.github.io/Kidai
+🔗 **立即使用**：https://sakuradigi.github.io/Kidai
+
+不需要安裝任何 App，手機瀏覽器直接開啟即可。
+
+---
+
+## 為什麼做這個？
+
+身為家長，陪孩子寫作業有兩個高頻痛點：
+
+1. **作業量大、答案不確定** — 國語填空、英語造句、數學應用題，家長不一定每題都有把握
+2. **繪本要唸給孩子聽** — 孩子識字量不足，家長得逐字唸，費時又容易唸錯
+
+現有 AI 工具（Gemini、ChatGPT）能做到這些，但 UX 不是為這個場景設計的：跳題、跳頁、朗讀無法中斷、無法從指定位置開始……
+
+KidAI 就是為這個場景專門打造的。
 
 ---
 
 ## 功能
 
 ### 📝 解題助手
-- 拍攝作業照片（支援連續多頁）
-- AI 逐題辨識並回答，附解題說明
-- 支援數學、國語、英語、生活/自然等科目
+- 拍攝作業照片（支援多頁連續拍攝）
+- AI 逐題辨識並回答，附簡短說明
+- 支援數學、國語、英語、生活 / 自然等科目
+- 解題結果以清楚格式呈現
 
 ### 📖 繪本朗讀
-- 拍攝繪本頁面（自動去除頁碼、書名等雜訊）
+- 拍攝繪本頁面，自動去除頁碼、書名等雜訊
 - 段落高亮 + 逐段朗讀
-- 點擊任意段落從該處開始
-- 可調語速與語音
+- 點擊任意段落，從該處開始播放
+- 可調語速、可切換語音
+- 支援中文 / 英文繪本
+
+### 其他
+- 最近 10 筆歷史紀錄（localStorage，不上傳）
+- 解題完成後一鍵「新題目」清除重來
+- 模型自由選擇（見下方費用說明）
+- 繁體中文 / English 介面切換
 
 ---
 
 ## 使用方式
 
-1. 前往 [Google AI Studio](https://aistudio.google.com/app/apikey) 申請免費 Gemini API Key
-2. 開啟網頁，填入 API Key（僅傳送至 Google，不經過本站）
-3. 選擇模型（建議從 Gemini 2.0 Flash 開始）
-4. 拍照或上傳圖片，開始使用
+**Step 1 — 申請免費 Gemini API Key**
+
+前往 [Google AI Studio](https://aistudio.google.com/app/apikey)，登入 Google 帳號後點「Create API Key」。
+
+> 免費方案每分鐘 60 次請求，個人使用完全夠用，不需要信用卡。
+> 你的 Gemini 訂閱（消費者版）和 API 是兩個不同系統，互不影響。
+
+**Step 2 — 開啟網頁，填入 API Key**
+
+填入後點「儲存」，之後每次開啟會自動帶入（存在你的瀏覽器，不傳到任何伺服器）。
+
+**Step 3 — 選模型，開始拍照**
 
 ---
 
 ## 模型選擇與費用參考
 
-| 模型 | 建議用途 | 估計費用/次 |
-|------|---------|------------|
-| Gemini 2.0 Flash | 日常作業，速度快 | ~$0.001 |
-| Gemini 3.5 Flash | 複雜題目，更準確 | ~$0.005 |
-| Gemini 2.5 Flash | 平衡選項 | ~$0.003 |
+| 模型 | 建議用途 | 估計費用 / 次 |
+|------|---------|-------------|
+| Gemini 2.0 Flash（預設）| 日常作業，速度最快 | ~$0.001 |
+| Gemini 3.5 Flash ✨ | 複雜題目，最新模型（2026 I/O）| ~$0.005 |
+| Gemini 2.5 Flash | 平衡速度與準確度 | ~$0.003 |
 | Gemini 2.5 Pro | 最高準確度 | ~$0.02 |
 
-> Google AI Studio 有免費額度（每分鐘60次），個人使用基本不需付費。
+> 費用從你自己的 Google AI Studio 帳號扣，不經過本站。
 
 ---
 
-## 技術
+## 隱私
 
-- 純單頁 HTML，無後端，無資料庫
-- 串接 Google Gemini Vision API
-- TTS 使用瀏覽器原生 Web Speech API
-- 歷史紀錄存於 localStorage（最近10筆）
+- 圖片直接從你的瀏覽器傳送至 Google Gemini API，**不經過本站任何伺服器**
+- API Key 存在你瀏覽器的 localStorage，不上傳
+- 本站不收集任何使用資料
 
 ---
 
-## 版本
+## 技術架構
+
+- 純單頁 HTML，零後端、零資料庫
+- Google Gemini Vision API — 圖片辨識 + 解題
+- Web Speech API — 瀏覽器原生 TTS
+- localStorage — 歷史紀錄暫存（最近 10 筆，文字 only）
+- marked.js — Markdown 渲染
+
+---
+
+## 版本紀錄
 
 見 [CHANGELOG.md](./CHANGELOG.md)
 
@@ -60,4 +100,6 @@
 
 ## 開發者
 
-Vincent Lu — 為自己孩子做的工具，開源分享。
+Vincent Lu — 為自己孩子做的工具，開源分享給有同樣需求的家長。
+
+如有 bug 或功能建議，歡迎開 [Issue](https://github.com/sakuradigi/Kidai/issues)。
