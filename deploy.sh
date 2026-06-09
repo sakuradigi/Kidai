@@ -2,7 +2,7 @@
 # Homie 作業通 — 一鍵部署腳本
 # 用法：bash deploy.sh "說明這次改了什麼"
 
-cd /Users/vincentlu/Claude/Projects/KidAI
+cd /Users/vincentlu/Claude/Projects/Homie
 
 MSG=${1:-"更新"}
 
