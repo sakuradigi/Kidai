@@ -163,6 +163,24 @@
   .history-item .h-meta { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   .history-item .h-preview { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  /* Capture overlay (bottom sheet after camera shot) */
+  .co-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 199; }
+  .co-bg.show { display: block; }
+  .co-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-radius: 24px 24px 0 0; padding: 20px 16px 24px; box-shadow: 0 -8px 32px rgba(0,0,0,0.18); z-index: 200; transform: translateY(110%); transition: transform 0.32s cubic-bezier(0.34,1.3,0.64,1); }
+  .co-sheet.show { transform: translateY(0); }
+  .co-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+  .co-header { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+  .co-thumb { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; background: #eee; flex-shrink: 0; }
+  .co-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .co-count { font-size: 18px; font-weight: 700; }
+  .co-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .co-btn { width: 100%; padding: 17px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .co-btn.primary { background: var(--primary); color: white; }
+  .co-btn.secondary { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); font-weight: 500; }
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .co-sheet { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+  }
+
   /* Empty state */
   .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
   .empty-state .big-emoji { font-size: 48px; margin-bottom: 12px; }
@@ -240,10 +258,10 @@
 </div>
 
 <!-- Hidden file inputs (iOS-safe) -->
-<input class="hidden-input" type="file" id="hwCameraInput" accept="image/*" capture="environment" onchange="handleFileInput(this,'hw')">
-<input class="hidden-input" type="file" id="hwGalleryInput" accept="image/*" multiple onchange="handleFileInput(this,'hw')">
-<input class="hidden-input" type="file" id="rdCameraInput" accept="image/*" capture="environment" onchange="handleFileInput(this,'rd')">
-<input class="hidden-input" type="file" id="rdGalleryInput" accept="image/*" multiple onchange="handleFileInput(this,'rd')">
+<input class="hidden-input" type="file" id="hwCameraInput" accept="image/*" capture="environment" onchange="handleFileInput(this,'hw',true)">
+<input class="hidden-input" type="file" id="hwGalleryInput" accept="image/*" multiple onchange="handleFileInput(this,'hw',false)">
+<input class="hidden-input" type="file" id="rdCameraInput" accept="image/*" capture="environment" onchange="handleFileInput(this,'rd',true)">
+<input class="hidden-input" type="file" id="rdGalleryInput" accept="image/*" multiple onchange="handleFileInput(this,'rd',false)">
 
 <div class="tabs" style="max-width:700px;margin-left:auto;margin-right:auto;">
   <button class="tab active" onclick="switchTab('homework')" id="tab-homework">
@@ -366,6 +384,21 @@
 
 </main>
 
+<!-- Capture bottom sheet -->
+<div class="co-bg" id="coBg" onclick="hideCaptureSheet()"></div>
+<div class="co-sheet" id="coSheet">
+  <div class="co-handle"></div>
+  <div class="co-header">
+    <div class="co-thumb" id="coThumb"></div>
+    <div>
+      <div class="co-count" id="coCount">已拍 1 張</div>
+      <div class="co-sub">繼續拍下一頁，或完成分析</div>
+    </div>
+  </div>
+  <button class="co-btn primary" id="coContinueBtn">📷 繼續拍下一張</button>
+  <button class="co-btn secondary" onclick="hideCaptureSheet()">✅ 完成，返回頁面</button>
+</div>
+
 <script>
 // ===== STATE =====
 let lang = 'zh';
@@ -399,8 +432,9 @@ const PROVIDERS = {
     linkText: 'Claude API Key',
     desc: 'Anthropic Console 申請，資料僅傳送至 Anthropic',
     models: [
-      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6（推薦・均衡）', cost: '~$0.006 / 次' },
-      { value: 'claude-opus-4-8',   label: 'Claude Opus 4.8（最強・較貴）',   cost: '~$0.03 / 次'  },
+      { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5（快速・最省）',  cost: '~$0.001 / 次' },
+      { value: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6（推薦・均衡）', cost: '~$0.006 / 次' },
+      { value: 'claude-opus-4-8',           label: 'Claude Opus 4.8（最強・較貴）',   cost: '~$0.03 / 次'  },
     ]
   },
   openai: {
@@ -411,9 +445,10 @@ const PROVIDERS = {
     linkText: 'OpenAI API Key',
     desc: 'OpenAI Platform 申請，資料僅傳送至 OpenAI',
     models: [
-      { value: 'gpt-4.1',      label: 'GPT-4.1（推薦・均衡）',    cost: '~$0.005 / 次' },
-      { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini（快速・省）', cost: '~$0.001 / 次' },
-      { value: 'gpt-4o',       label: 'GPT-4o（穩定視覺）',       cost: '~$0.003 / 次' },
+      { value: 'gpt-5.4-mini', label: 'GPT-5.4 Mini（推薦・均衡）', cost: '~$0.002 / 次'  },
+      { value: 'gpt-5.4-nano', label: 'GPT-5.4 Nano（最快・最省）', cost: '~$0.0005 / 次' },
+      { value: 'gpt-4.1',      label: 'GPT-4.1（穩定）',            cost: '~$0.005 / 次'  },
+      { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini（穩定・省）',   cost: '~$0.001 / 次'  },
     ]
   }
 };
@@ -507,11 +542,44 @@ function onDrop(e, prefix) {
 }
 
 // ===== IMAGE HANDLING =====
-// iOS-safe: reset input value after each use so onChange fires again on same file
-function handleFileInput(input, prefix) {
-  addImages(input.files, prefix);
-  // Reset so the same file/camera can be triggered again
+function handleFileInput(input, prefix, fromCamera) {
+  if (!input.files.length) return;
+  if (fromCamera) {
+    // Load single photo then show bottom sheet
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const arr = prefix === 'hw' ? hwImages : rdImages;
+      arr.push({ file, dataUrl: e.target.result });
+      renderPreview(prefix);
+      updateShootBar(prefix);
+      showCaptureSheet(prefix, e.target.result);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    addImages(input.files, prefix);
+  }
   setTimeout(() => { input.value = ''; }, 200);
+}
+
+// ===== CAPTURE BOTTOM SHEET =====
+function showCaptureSheet(prefix, dataUrl) {
+  const arr = prefix === 'hw' ? hwImages : rdImages;
+  const cameraId = prefix === 'hw' ? 'hwCameraInput' : 'rdCameraInput';
+  document.getElementById('coCount').textContent = `已拍 ${arr.length} 張`;
+  document.getElementById('coThumb').innerHTML = `<img src="${dataUrl}">`;
+  document.getElementById('coContinueBtn').onclick = () => {
+    // Trigger camera first (within user gesture), then animate sheet away
+    document.getElementById(cameraId).click();
+    hideCaptureSheet();
+  };
+  document.getElementById('coSheet').classList.add('show');
+  document.getElementById('coBg').classList.add('show');
+}
+
+function hideCaptureSheet() {
+  document.getElementById('coSheet').classList.remove('show');
+  document.getElementById('coBg').classList.remove('show');
 }
 
 function addImages(files, prefix) {
